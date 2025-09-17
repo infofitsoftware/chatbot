@@ -67,10 +67,10 @@ jobs:
     
     - name: Run tests
       run: |
-        export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/test_chatbot_db"
+        export TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/test_chatbot_db"
         python -m pytest tests/ -v --cov=app --cov-report=xml
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_chatbot_db
+        TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_chatbot_db
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         SECRET_KEY: test-secret-key
         FLASK_ENV: testing

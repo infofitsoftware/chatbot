@@ -12,6 +12,8 @@ from models import db
 @pytest.fixture
 def app():
     """Create and configure a new app instance for each test."""
+    # Set testing environment
+    os.environ['FLASK_ENV'] = 'testing'
     app = create_app()
     app.config['TESTING'] = True
     app.config['DATABASE_URL'] = os.environ.get('TEST_DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/test_chatbot_db')

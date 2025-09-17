@@ -27,9 +27,17 @@ class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
 
+class TestingConfig(Config):
+    """Testing configuration"""
+    TESTING = True
+    DEBUG = False
+    # Use in-memory database for testing if needed
+    DATABASE_URL = os.environ.get('TEST_DATABASE_URL') or 'postgresql://localhost/test_chatbot_db'
+
 # Configuration dictionary
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'testing': TestingConfig,
     'default': DevelopmentConfig
 }
