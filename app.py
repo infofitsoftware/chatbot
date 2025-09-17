@@ -130,9 +130,10 @@ Please keep your response concise and helpful."""
     
     return app
 
+# Create app instance for Gunicorn
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
-    
     # Get port from environment variable or use default
     port = int(os.environ.get('PORT', 5000))
     
