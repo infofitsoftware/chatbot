@@ -3,88 +3,9 @@ name: Deploy Chat Application to AWS EC2
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_chatbot_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
-    
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-cov
-    
-    - name: Set up test database
-      run: |
-        export DATABASE_URL="postgresql://postgres:rsamriddhi1234@rsamriddhi.c3ea24kmsrmf.ap-south-1.rds.amazonaws.com:5432/rsamriddhi"
-        python -c "
-        from models import db
-        if db.connect():
-            db.create_tables()
-            print('Test database setup successful')
-            db.disconnect()
-        else:
-            print('Test database setup failed')
-            exit(1)
-        "
-      env:
-        DATABASE_URL: postgresql://postgres:rsamriddhi1234@rsamriddhi.c3ea24kmsrmf.ap-south-1.rds.amazonaws.com:5432/rsamriddhi
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        SECRET_KEY: test-secret-key
-        FLASK_ENV: testing
-    
-    - name: Run tests
-      run: |
-        export TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/test_chatbot_db"
-        python -m pytest tests/ -v --cov=app --cov-report=xml
-      env:
-        TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_chatbot_db
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        SECRET_KEY: test-secret-key
-        FLASK_ENV: testing
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-
   deploy:
-    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
@@ -108,12 +29,10 @@ jobs:
           
           # Install essential packages if not present
           echo "🔧 Installing essential packages..."
-          sudo apt install -y python3 python3-pip python3-venv python3-dev build-essential libpq-dev postgresql postgresql-contrib nginx git curl wget
+          sudo apt install -y python3 python3-pip python3-venv python3-dev build-essential libpq-dev nginx git curl wget
           
           # Start and enable services
           echo "🔄 Starting services..."
-          sudo systemctl start postgresql
-          sudo systemctl enable postgresql
           sudo systemctl start nginx
           sudo systemctl enable nginx
           
@@ -146,18 +65,14 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
           
-          # Set up PostgreSQL database
-          echo "🗄️ Setting up database..."
-          sudo -u postgres psql -c "CREATE DATABASE chatbot_db;" 2>/dev/null || echo "Database already exists"
-          sudo -u postgres psql -c "CREATE USER chatbot_user WITH PASSWORD 'secure_password_123';" 2>/dev/null || echo "User already exists"
-          sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE chatbot_db TO chatbot_user;" 2>/dev/null || echo "Privileges already granted"
-          sudo -u postgres psql -c "ALTER USER chatbot_user CREATEDB;" 2>/dev/null || echo "User already has CREATEDB"
+          # Database is already set up on AWS RDS
+          echo "🗄️ Using AWS RDS database..."
           
           # Set up environment variables
           echo "⚙️ Configuring environment..."
           cat > .env << EOF
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          DATABASE_URL=postgresql://chatbot_user:secure_password_123@localhost:5432/chatbot_db
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
           FLASK_ENV=production
           SECRET_KEY=${{ secrets.SECRET_KEY }}
           PORT=5000
@@ -182,8 +97,7 @@ jobs:
           sudo tee /etc/systemd/system/chatbot-app.service > /dev/null << EOF
           [Unit]
           Description=Chatbot Application
-          After=network.target postgresql.service
-          Requires=postgresql.service
+          After=network.target
           
           [Service]
           Type=exec
@@ -268,7 +182,6 @@ jobs:
           echo "Service Status:"
           sudo systemctl is-active chatbot-app
           sudo systemctl is-active nginx
-          sudo systemctl is-active postgresql
           
           echo "🎉 Deployment completed successfully!"
           echo "=================================="
