@@ -276,7 +276,7 @@ jobs:
   notify:
     needs: [test, deploy]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && secrets.SLACK_WEBHOOK != ''
     
     steps:
     - name: Notify deployment status
@@ -285,4 +285,3 @@ jobs:
         status: ${{ job.status }}
         channel: '#deployments'
         webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      if: always() && secrets.SLACK_WEBHOOK != ''
