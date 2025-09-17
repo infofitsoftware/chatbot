@@ -105,6 +105,7 @@ jobs:
           Group=ubuntu
           WorkingDirectory=/var/www/chatbot-app
           Environment=PATH=/var/www/chatbot-app/venv/bin
+          EnvironmentFile=/var/www/chatbot-app/.env
           ExecStart=/var/www/chatbot-app/venv/bin/gunicorn --bind 127.0.0.1:5000 --workers 3 app:app
           ExecReload=/bin/kill -s HUP \$MAINPID
           Restart=always
@@ -162,6 +163,10 @@ jobs:
           echo "📊 Checking service status..."
           sudo systemctl status chatbot-app --no-pager
           sudo systemctl status nginx --no-pager
+          
+          # Check application logs for debugging
+          echo "🔍 Checking application logs..."
+          sudo journalctl -u chatbot-app --no-pager -n 20
           
           # Test application health
           echo "🏥 Testing application health..."
